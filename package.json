@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/AniaMakes/form-tracking-js#readme",
   "dependencies": {
-    "exceljs": "^1.6.2"
+    "exceljs": "^1.6.2",
+    "moment": "^2.22.2"
   }
 }
