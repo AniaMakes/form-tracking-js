@@ -1,14 +1,16 @@
 const Excel = require('./node_modules/exceljs');
 const moment = require('moment');
+const puppeteer = require('puppeteer');
 
 const workingFile = './track.xlsx';
 
 const workbook = new Excel.Workbook();
 
-const outputObject = {};
+let outputObject = {};
 
+async function read(){
 workbook.xlsx.readFile(workingFile)
-.then( output => {
+.then( await function(output){
 
 	const worksheet = workbook.getWorksheet("Sheet1");
 
@@ -17,9 +19,9 @@ workbook.xlsx.readFile(workingFile)
 		let problem = "";
 
 		const formNumberColumn = thisRow[0];
-		const dayColumn = thisRow[2];
-		const monthColumn = thisRow[3];
-		const yearColumn = thisRow[4];
+		const dayColumn = thisRow[1];
+		const monthColumn = thisRow[2];
+		const yearColumn = thisRow[3];
 
 		let formNumber = "";
 		let outputCell = worksheet.getCell(`H${rowNumber}`)
@@ -27,7 +29,7 @@ workbook.xlsx.readFile(workingFile)
 		if (formNumberColumn.length == 31){
 			formNumber = formNumberColumn.slice(3, 14);
 		}
-		else if (formNumberColumn.length == 1){
+		else if (formNumberColumn.length == 13){
 			formNumber = formNumberColumn;
 		}
 		else {
@@ -35,26 +37,50 @@ workbook.xlsx.readFile(workingFile)
 		}
 
 
-		const workingDate = moment(`${thisRow[2]}-${thisRow[3]}
--${thisRow[4]}`, "DD-MM-YYYY");
-		console.log({workingDate});
+		const workingDate = moment(`${dayColumn}-${monthColumn}
+-${yearColumn}`, "DD-MM-YYYY");
 		let dayOB = workingDate.format("DD");
-		console.log(typeof(dayOB));
-		console.log({thisRow});
+		let monthOB = workingDate.format("MM");
+		let yearOB = workingDate.format("YYYY");
+
 
 		if (workingDate.isValid() === false){
 			problem = "Something is wrong with the date of birth."
 		}
 
-		if (problem == true){
-			outputObject[outputCell] = problem;
+		if (problem !== ""){
+			outputObject[`H${rowNumber}`] = problem;
+			console.log(outputObject)
+		} else { async function puppet(){
+			console.log(("Puppet"));
+
+			let browser = await puppeteer.launch();
+			page = await browser.newPage;
+			await page.goto("https://secure.crbonline.gov.uk/enquiry/enquirySearchAction.do")
+			await page.click('[id="AppNo"]');
+			await page.type('[id="AppNo"]', formNumber)
+			await page.click('[id="dateOfBirthDay"]');
+			await page.select('[id="dateOfBirthDay"]', dayOB);
+			await page.click('[id="dateOfBirthMonth"]');
+			await page.select('[id="dateOfBirthMonth"]', monthOB);
+			await page.click('[id="dateOfBirthYear"]');
+			await page.select('[id="dateOfBirthYear"]', yearOB);
+			const output = await page.click('[name="submit"]');
+
+			console.log(output);
+		}
+
 
 		}
 	})
 }
 );
+}
 
-console.log(outputObject);
+
+read().
+then( output => console.log(outputObject)).
+catch(err => console.log(err))
 
 // //Update a cell
 // row.getCell(1).value = 5;
